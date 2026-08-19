@@ -1,1 +1,0 @@
-fair selection of players
