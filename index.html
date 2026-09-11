@@ -1,0 +1,804 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fair Foursomes</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --green-deep:#1E4A34;
+    --green:#2C6B48;
+    --green-light:#4F8B63;
+    --green-pale:#E7EFE6;
+    --sand:#DCC9A0;
+    --cream:#FAF6EC;
+    --ink:#203025;
+    --ink-soft:#54655a;
+    --red:#B0392C;
+    --red-dark:#8C2C22;
+    --gold:#B0842A;
+    --slate:#66766B;
+    --line:rgba(32,48,37,0.16);
+    --radius:10px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:'Inter',sans-serif;
+    color:var(--ink);
+    min-height:100vh;
+    background-color:var(--green-deep);
+    background-image:
+      repeating-linear-gradient(115deg, rgba(255,255,255,0.035) 0px, rgba(255,255,255,0.035) 2px, transparent 2px, transparent 42px),
+      repeating-linear-gradient(115deg, rgba(0,0,0,0.06) 0px, rgba(0,0,0,0.06) 21px, transparent 21px, transparent 42px),
+      radial-gradient(circle at 20% 0%, #2c6b48 0%, #1E4A34 55%, #163a29 100%);
+    background-attachment:fixed;
+    padding:32px 18px 60px;
+  }
+  .wrap{max-width:1080px;margin:0 auto;}
+
+  header.page{
+    text-align:left;
+    margin-bottom:28px;
+    padding-bottom:18px;
+    border-bottom:1px solid rgba(250,246,236,0.25);
+    display:flex;
+    align-items:baseline;
+    justify-content:space-between;
+    flex-wrap:wrap;
+    gap:8px;
+  }
+  header.page h1{
+    font-family:'Fraunces',serif;
+    font-weight:600;
+    font-size:2.5rem;
+    color:var(--cream);
+    margin:0;
+    letter-spacing:0.2px;
+  }
+  header.page p{
+    margin:0;
+    color:var(--sand);
+    font-size:0.98rem;
+    max-width:340px;
+  }
+
+  .grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:20px;
+  }
+  @media(max-width:760px){ .grid{grid-template-columns:1fr;} }
+
+  .panel{
+    background:var(--cream);
+    border:1px solid rgba(255,255,255,0.4);
+    border-radius:var(--radius);
+    box-shadow:0 10px 26px rgba(10,25,17,0.28);
+    padding:20px 20px 18px;
+    display:flex;
+    flex-direction:column;
+  }
+  .panel h2{
+    font-family:'Fraunces',serif;
+    font-weight:600;
+    font-size:1.28rem;
+    margin:0 0 4px;
+    color:var(--green-deep);
+  }
+  .panel .sub{
+    font-size:0.84rem;
+    color:var(--ink-soft);
+    margin:0 0 14px;
+  }
+
+  /* Add player form */
+  .add-form{
+    display:flex;
+    gap:8px;
+    margin-bottom:10px;
+  }
+  .add-form input[type="text"]{flex:1 1 auto; min-width:0;}
+  .add-form input[type="number"]{width:78px;}
+  input[type="text"], input[type="number"], textarea{
+    font-family:'Inter',sans-serif;
+    font-size:0.92rem;
+    padding:8px 10px;
+    border:1px solid var(--line);
+    border-radius:6px;
+    background:#fff;
+    color:var(--ink);
+  }
+  input:focus, textarea:focus, button:focus-visible{
+    outline:2px solid var(--gold);
+    outline-offset:1px;
+  }
+  button{
+    font-family:'Inter',sans-serif;
+    font-weight:600;
+    font-size:0.86rem;
+    border:none;
+    border-radius:6px;
+    padding:9px 14px;
+    cursor:pointer;
+    transition:transform 0.08s ease, opacity 0.15s ease;
+  }
+  button:active{transform:translateY(1px);}
+  button:disabled{opacity:0.45; cursor:not-allowed;}
+  .btn-primary{background:var(--green-deep); color:var(--cream);}
+  .btn-primary:hover:not(:disabled){background:var(--green);}
+  .btn-secondary{background:var(--sand); color:var(--green-deep);}
+  .btn-secondary:hover:not(:disabled){background:#cdb98a;}
+  .btn-ghost{background:transparent; color:var(--ink-soft); border:1px solid var(--line); padding:5px 9px; font-size:0.78rem;}
+  .btn-ghost:hover{background:rgba(0,0,0,0.04);}
+  .btn-danger{background:transparent; color:var(--red); border:1px solid rgba(176,57,44,0.3); padding:5px 8px; font-size:0.78rem;}
+  .btn-danger:hover{background:rgba(176,57,44,0.08);}
+
+  .toggle-paste{
+    background:none; border:none; color:var(--green); font-size:0.82rem;
+    text-decoration:underline; cursor:pointer; padding:2px 0 12px; text-align:left; font-weight:500;
+  }
+  .paste-area{display:none; margin-bottom:12px;}
+  .paste-area.open{display:block;}
+  .paste-area textarea{width:100%; min-height:110px; resize:vertical; margin-bottom:8px; font-family:'Inter',monospace;}
+  .paste-hint{font-size:0.76rem; color:var(--ink-soft); margin:0 0 8px;}
+
+  .player-list{
+    list-style:none; margin:0; padding:0;
+    max-height:420px; overflow-y:auto;
+    border-top:1px solid var(--line);
+  }
+  .player-list li{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    padding:9px 4px;
+    border-bottom:1px solid var(--line);
+    cursor:pointer;
+    transition:background 0.12s ease;
+  }
+  .player-list li:hover{background:var(--green-pale);}
+  .player-list .rank{
+    width:20px; text-align:right; font-size:0.76rem; color:var(--ink-soft); flex:none; font-variant-numeric:tabular-nums;
+  }
+  .grade-badge{
+    width:24px; height:24px; border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    font-family:'Fraunces',serif; font-weight:700; font-size:0.85rem;
+    color:var(--cream); flex:none;
+  }
+  .grade-A{background:var(--red);}
+  .grade-B{background:var(--green-deep);}
+  .grade-C{background:var(--gold);}
+  .grade-D{background:var(--slate);}
+
+  .p-name{flex:1 1 auto; font-size:0.94rem; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .p-index{font-size:0.9rem; color:var(--ink-soft); font-variant-numeric:tabular-nums; flex:none; width:38px; text-align:right;}
+  .row-actions{display:flex; gap:5px; flex:none;}
+
+  .edit-row{display:flex; gap:6px; align-items:center; width:100%;}
+  .edit-row input[type="text"]{flex:1 1 auto; min-width:0;}
+  .edit-row input[type="number"]{width:64px;}
+
+  .empty-note{
+    padding:22px 6px; text-align:center; color:var(--ink-soft); font-size:0.88rem; line-height:1.5;
+  }
+
+  .panel-footer{
+    margin-top:14px; padding-top:12px; border-top:1px solid var(--line);
+    display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;
+  }
+  .count-tag{font-size:0.85rem; color:var(--ink-soft);}
+  .count-tag strong{color:var(--ink); font-size:1.02rem;}
+  .action-buttons{display:flex; gap:8px;}
+  .form-msg{font-size:0.8rem; color:var(--red); min-height:1.1em; margin:2px 0 0;}
+
+  /* Groups section */
+  .groups-section{margin-top:26px;}
+  .groups-head{
+    display:flex; align-items:baseline; justify-content:space-between; flex-wrap:wrap; gap:10px;
+    margin-bottom:14px;
+  }
+  .groups-head h2{
+    font-family:'Fraunces',serif; font-weight:600; color:var(--cream); font-size:1.5rem; margin:0;
+  }
+  .bench-note{
+    background:rgba(250,246,236,0.14); border:1px solid rgba(250,246,236,0.3);
+    color:var(--cream); font-size:0.85rem; padding:8px 12px; border-radius:8px; margin-bottom:14px;
+  }
+  .groups-grid{
+    display:grid; grid-template-columns:repeat(auto-fit, minmax(230px, 1fr)); gap:16px;
+  }
+  .team-card{
+    background:var(--cream); border-radius:var(--radius);
+    box-shadow:0 8px 20px rgba(10,25,17,0.26);
+    overflow:hidden;
+    animation:riseIn 0.4s ease both;
+  }
+  @keyframes riseIn{from{opacity:0; transform:translateY(10px);} to{opacity:1; transform:translateY(0);}}
+  .team-head{
+    background:var(--green-deep); color:var(--cream);
+    padding:11px 16px; display:flex; align-items:center; justify-content:space-between; gap:10px;
+  }
+  .team-head .num{
+    width:28px; height:28px; border-radius:50%; background:var(--gold); color:var(--green-deep);
+    display:flex; align-items:center; justify-content:center; font-family:'Fraunces',serif; font-weight:700; font-size:0.92rem; flex:none;
+  }
+  .team-head .name{font-family:'Fraunces',serif; font-weight:600; font-size:1.02rem; flex:1;}
+  .team-head .avg{font-size:0.78rem; color:var(--sand); white-space:nowrap;}
+  .team-body{padding:6px 16px 14px; border-top:2px dashed var(--sand);}
+  .team-body ul{list-style:none; margin:0; padding:0;}
+  .team-body li{
+    display:flex; align-items:center; gap:9px; padding:8px 0; border-bottom:1px solid var(--line);
+  }
+  .team-body li:last-child{border-bottom:none;}
+  .team-body .p-name{font-size:0.92rem;}
+  .team-body .p-index{width:auto;}
+
+  .generate-hint{color:var(--sand); font-size:0.86rem; margin:0;}
+
+  ::-webkit-scrollbar{width:8px;}
+  ::-webkit-scrollbar-thumb{background:var(--sand); border-radius:4px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="page">
+    <h1>Fair Foursomes</h1>
+    <p>Rank the field, pick who's playing, and split them into balanced groups.</p>
+  </header>
+
+  <div class="grid">
+
+    <!-- AVAILABLE PLAYERS -->
+    <section class="panel">
+      <h2>Available players</h2>
+      <p class="sub">Ranked by index — lowest is best. Tap a player to move them into today's round.</p>
+
+      <div class="add-form">
+        <input type="text" id="addName" placeholder="Player name">
+        <input type="number" id="addIndex" placeholder="Index" step="0.1">
+        <button class="btn-primary" id="addBtn">Add</button>
+      </div>
+      <p class="form-msg" id="addMsg"></p>
+
+      <button class="toggle-paste" id="pasteToggle">Paste a list instead</button>
+      <div class="paste-area" id="pasteArea">
+        <p class="paste-hint">One player per line, as "Name, Index" — e.g. Bill Moher, 19</p>
+        <textarea id="pasteText" placeholder="Jane Diaz, 14.2&#10;Sam Ortega, 9.5"></textarea>
+        <button class="btn-secondary" id="importBtn">Import list</button>
+      </div>
+
+      <ul class="player-list" id="availableList"></ul>
+
+      <div class="panel-footer">
+        <span class="count-tag"><strong id="availCount">0</strong> available</span>
+        <button class="btn-danger" id="clearAvailableBtn">Clear available</button>
+      </div>
+    </section>
+
+    <!-- PARTICIPATING PLAYERS -->
+    <section class="panel">
+      <h2>Participating players</h2>
+      <p class="sub">Today's field. Tap a player to send them back to available.</p>
+
+      <ul class="player-list" id="participatingList"></ul>
+
+      <div class="panel-footer">
+        <span class="count-tag"><strong id="partCount">0</strong> playing</span>
+        <button class="btn-ghost" id="clearParticipatingBtn" style="padding:9px 14px; font-size:0.86rem; border-color:var(--line);">Send all back to available</button>
+      </div>
+      <div class="panel-footer" style="border-top:none; margin-top:0; padding-top:4px;">
+        <label style="display:flex; align-items:center; gap:7px; font-size:0.85rem; color:var(--ink-soft); cursor:pointer;">
+          <input type="checkbox" id="allThreesomeToggle" style="width:15px; height:15px; cursor:pointer;">
+          All threesomes
+        </label>
+      </div>
+      <div class="panel-footer" style="border-top:none; margin-top:0; padding-top:8px;">
+        <span></span>
+        <div class="action-buttons">
+          <button class="btn-primary" id="generateBtn">Generate groups</button>
+          <button class="btn-secondary" id="reshuffleBtn" style="display:none;">Reshuffle</button>
+        </div>
+      </div>
+      <p class="form-msg" id="generateMsg"></p>
+    </section>
+
+  </div>
+
+  <div class="groups-section" id="groupsSection" style="display:none;">
+    <div class="groups-head">
+      <h2>Today's groups</h2>
+      <p class="generate-hint">Groups are blended by index — not just top vs. bottom.</p>
+    </div>
+    <div id="benchNote"></div>
+    <div class="groups-grid" id="groupsGrid"></div>
+  </div>
+
+</div>
+
+<script>
+(function(){
+  const SEED_TEXT = `Dale Deselms, 23.1
+Bill Moher, 19
+Joe Tolitsky, 19.4
+Mike Eldridge, 20
+Mitch Lewis, 25
+James Walker, 21.6
+Chuck Louge, 16.7
+Mike Tripp, 11.5
+Jim Dugan, 23.5
+Mickey Breznik, 16
+Bob Merenes, 17
+Jay Bernstein, 35
+Eric Bernstein, 40.5
+Ron Hearn, 27.6
+Odie Odom, 22
+Bill Baum, 22
+Vinny Burke, 19.5
+Steve Lauter, 25
+Ricky Eldridge, 18.5
+Joe Kaschac, 20.9
+Jim Simpson, 13
+Jim Smith, 20
+Bill Healy, 32.8
+Gordon YeazeL, 16.6
+Drew Zwald, 22.5
+Bill Austin, 8.3
+Wayne McGirt, 17.8
+Terry Britt, 14 .7
+Doug Wilson, 12.8
+Gary Christian, 22.3
+Bill Hapgood, 8.4
+Bruce Berry, 13.2
+Cole Pro, 15
+Colby Wiener, 6.6
+Frank Heacox, 17.5`;
+
+  let roster = [];
+  let nextId = 1;
+  let groups = null;
+  let benched = [];
+  let editingId = null;
+
+  const els = {
+    addName: document.getElementById('addName'),
+    addIndex: document.getElementById('addIndex'),
+    addBtn: document.getElementById('addBtn'),
+    addMsg: document.getElementById('addMsg'),
+    pasteToggle: document.getElementById('pasteToggle'),
+    pasteArea: document.getElementById('pasteArea'),
+    pasteText: document.getElementById('pasteText'),
+    importBtn: document.getElementById('importBtn'),
+    availableList: document.getElementById('availableList'),
+    availCount: document.getElementById('availCount'),
+    clearAvailableBtn: document.getElementById('clearAvailableBtn'),
+    participatingList: document.getElementById('participatingList'),
+    partCount: document.getElementById('partCount'),
+    clearParticipatingBtn: document.getElementById('clearParticipatingBtn'),
+    generateBtn: document.getElementById('generateBtn'),
+    allThreesomeToggle: document.getElementById('allThreesomeToggle'),
+    reshuffleBtn: document.getElementById('reshuffleBtn'),
+    generateMsg: document.getElementById('generateMsg'),
+    groupsSection: document.getElementById('groupsSection'),
+    groupsGrid: document.getElementById('groupsGrid'),
+    benchNote: document.getElementById('benchNote'),
+  };
+
+  function parseLine(line){
+    const idx = line.lastIndexOf(',');
+    if(idx === -1) return null;
+    const name = line.slice(0, idx).trim();
+    const numStr = line.slice(idx+1).replace(/\s+/g,'');
+    const num = parseFloat(numStr);
+    if(!name || isNaN(num)) return null;
+    return {name, index: num};
+  }
+
+  function parseBlock(text){
+    return text.split('\n').map(l=>l.trim()).filter(Boolean).map(parseLine).filter(Boolean);
+  }
+
+  function upsert(name, index){
+    const existing = roster.find(p => p.name.toLowerCase() === name.toLowerCase());
+    if(existing){
+      existing.index = index;
+    } else {
+      roster.push({id: nextId++, name, index, participating:false});
+    }
+  }
+
+  function assignGrades(){
+    const sorted = roster.slice().sort((a,b)=>a.index-b.index);
+    sorted.forEach((p,i)=>{
+      p.rank = i+1;
+      p.grade = i<8 ? 'A' : i<16 ? 'B' : i<24 ? 'C' : 'D';
+    });
+  }
+
+  function fmtIndex(n){
+    return (Math.round(n*10)/10).toFixed(1);
+  }
+
+  function save(){
+    try{
+      if(window.storage && window.storage.set){
+        const payload = roster.map(p=>({name:p.name, index:p.index, participating:p.participating}));
+        window.storage.set('roster', JSON.stringify(payload), false).catch(()=>{});
+      }
+    }catch(e){}
+  }
+
+  function load(){
+    try{
+      if(window.storage && window.storage.get){
+        window.storage.get('roster', false).then(res=>{
+          if(res && res.value){
+            const data = JSON.parse(res.value);
+            roster = data.map(d => ({id: nextId++, name:d.name, index:d.index, participating: !!d.participating}));
+          } else {
+            seedDefault();
+          }
+          assignGrades();
+          renderAll();
+        }).catch(()=>{ seedDefault(); assignGrades(); renderAll(); });
+        return;
+      }
+    }catch(e){}
+    seedDefault();
+    assignGrades();
+    renderAll();
+  }
+
+  function seedDefault(){
+    parseBlock(SEED_TEXT).forEach(p => roster.push({id: nextId++, name:p.name, index:p.index, participating:false}));
+  }
+
+  function renderAll(){
+    renderAvailable();
+    renderParticipating();
+    renderGroups();
+  }
+
+  function makeRow(p, opts){
+    const li = document.createElement('li');
+    if(editingId === p.id){
+      li.classList.add('editing');
+      const row = document.createElement('div');
+      row.className = 'edit-row';
+      const nameInput = document.createElement('input');
+      nameInput.type = 'text'; nameInput.value = p.name;
+      const idxInput = document.createElement('input');
+      idxInput.type = 'number'; idxInput.step='0.1'; idxInput.value = p.index;
+      const saveBtn = document.createElement('button');
+      saveBtn.className='btn-ghost'; saveBtn.textContent='Save';
+      const cancelBtn = document.createElement('button');
+      cancelBtn.className='btn-ghost'; cancelBtn.textContent='Cancel';
+      row.append(nameInput, idxInput, saveBtn, cancelBtn);
+      li.appendChild(row);
+      li.addEventListener('click', e => e.stopPropagation());
+      saveBtn.addEventListener('click', ()=>{
+        const nm = nameInput.value.trim();
+        const ix = parseFloat(idxInput.value);
+        if(nm && !isNaN(ix)){
+          p.name = nm; p.index = ix;
+          assignGrades();
+          editingId = null;
+          save();
+          renderAll();
+        }
+      });
+      cancelBtn.addEventListener('click', ()=>{ editingId = null; renderAll(); });
+      return li;
+    }
+
+    const rank = document.createElement('span');
+    rank.className='rank'; rank.textContent = '#'+p.rank;
+    const badge = document.createElement('span');
+    badge.className='grade-badge grade-'+p.grade; badge.textContent = p.grade;
+    const name = document.createElement('span');
+    name.className='p-name'; name.textContent = p.name;
+    const index = document.createElement('span');
+    index.className='p-index'; index.textContent = fmtIndex(p.index);
+    const actions = document.createElement('span');
+    actions.className='row-actions';
+    const editBtn = document.createElement('button');
+    editBtn.className='btn-ghost'; editBtn.textContent='Edit';
+    editBtn.addEventListener('click', e=>{ e.stopPropagation(); editingId = p.id; renderAll(); });
+    const delBtn = document.createElement('button');
+    delBtn.className='btn-danger'; delBtn.textContent='×';
+    delBtn.title='Remove player';
+    delBtn.addEventListener('click', e=>{
+      e.stopPropagation();
+      roster = roster.filter(x=>x.id!==p.id);
+      assignGrades();
+      save();
+      renderAll();
+    });
+    actions.append(editBtn, delBtn);
+
+    li.append(rank, badge, name, index, actions);
+    li.addEventListener('click', ()=>{
+      p.participating = opts.toParticipating;
+      save();
+      renderAll();
+    });
+    return li;
+  }
+
+  function renderAvailable(){
+    const list = roster.filter(p=>!p.participating).sort((a,b)=>a.index-b.index);
+    els.availCount.textContent = list.length;
+    els.availableList.innerHTML = '';
+    if(list.length===0){
+      const li = document.createElement('li');
+      li.className='empty-note';
+      li.style.cursor='default';
+      li.textContent = roster.length===0
+        ? 'No players yet — add one above or paste a list.'
+        : "Everyone is in today's round.";
+      els.availableList.appendChild(li);
+      return;
+    }
+    list.forEach(p => els.availableList.appendChild(makeRow(p, {toParticipating:true})));
+  }
+
+  function renderParticipating(){
+    const list = roster.filter(p=>p.participating).sort((a,b)=>a.index-b.index);
+    els.participatingList.innerHTML = '';
+    els.partCount.textContent = list.length;
+    if(list.length===0){
+      const li = document.createElement('li');
+      li.className='empty-note';
+      li.style.cursor='default';
+      li.textContent = "Tap an available player to add them to today's round.";
+      els.participatingList.appendChild(li);
+    } else {
+      list.forEach(p => els.participatingList.appendChild(makeRow(p, {toParticipating:false})));
+    }
+    els.generateBtn.disabled = list.length < 3;
+    if(groups){
+      els.reshuffleBtn.style.display = 'inline-block';
+    }
+  }
+
+  // ---- Team sizing & assignment ----
+  function computeSizes(n, allThrees){
+    if(allThrees){
+      const teams = Math.floor(n/3);
+      const benchCount = n % 3;
+      const sizes = Array(teams).fill(3);
+      return {sizes, benchCount};
+    }
+    // returns {sizes:[...], benchCount}
+    let bench = 0;
+    let count = n;
+    while(count >= 3){
+      let found = null;
+      for(let a=0; a<=Math.floor(count/3); a++){
+        const rem = count - 3*a;
+        if(rem>=0 && rem%4===0){ found = {a, b: rem/4}; break; }
+      }
+      if(found){
+        const sizes = [];
+        for(let i=0;i<found.b;i++) sizes.push(4);
+        for(let i=0;i<found.a;i++) sizes.push(3);
+        sizes.sort((x,y)=>y-x);
+        return {sizes, benchCount: bench};
+      }
+      count -= 1;
+      bench += 1;
+    }
+    return {sizes: [], benchCount: bench};
+  }
+
+  function shuffle(arr){
+    for(let i=arr.length-1;i>0;i--){
+      const j = Math.floor(Math.random()*(i+1));
+      [arr[i],arr[j]] = [arr[j],arr[i]];
+    }
+    return arr;
+  }
+
+  function snakeAssign(sortedPlayers, sizes){
+    const teams = sizes.map(()=>[]);
+    let order = teams.map((_,i)=>i);
+    let dir = 1;
+    const pool = sortedPlayers.slice();
+    let guard = 0;
+    while(pool.length && guard < 1000){
+      guard++;
+      const seq = dir===1 ? order : order.slice().reverse();
+      let progressed = false;
+      for(const t of seq){
+        if(teams[t].length < sizes[t] && pool.length){
+          teams[t].push(pool.shift());
+          progressed = true;
+        }
+      }
+      dir *= -1;
+      if(!progressed) break;
+    }
+    return teams;
+  }
+
+  function buildGroups(randomize){
+    const participants = roster.filter(p=>p.participating);
+    const n = participants.length;
+    if(n < 3){
+      groups = null;
+      els.groupsSection.style.display = 'none';
+      els.reshuffleBtn.style.display = 'none';
+      els.generateMsg.textContent = 'Add at least 3 participating players to generate groups.';
+      return;
+    }
+    els.generateMsg.textContent = '';
+    const allThrees = els.allThreesomeToggle.checked;
+    const {sizes, benchCount} = computeSizes(n, allThrees);
+    if(sizes.length===0){
+      groups = null;
+      els.groupsSection.style.display = 'none';
+      els.reshuffleBtn.style.display = 'none';
+      els.generateMsg.textContent = allThrees
+        ? 'Not enough players to form any threesomes.'
+        : 'Not enough players to form groups of 3 or 4.';
+      return;
+    }
+
+    let sorted = participants.slice().sort((a,b)=>a.index-b.index);
+    benched = [];
+    if(benchCount > 0){
+      // bench the players closest to the median index, spread evenly, so it's not always the same person
+      const benchIdxs = [];
+      const step = sorted.length / benchCount;
+      for(let i=0;i<benchCount;i++){
+        benchIdxs.push(Math.floor(step*i + step/2));
+      }
+      benchIdxs.sort((a,b)=>b-a).forEach(idx=>{
+        benched.push(sorted.splice(idx,1)[0]);
+      });
+    }
+
+    if(randomize){
+      const numTeams = sizes.length;
+      const jittered = [];
+      for(let start=0; start<sorted.length; start+=numTeams){
+        const chunk = sorted.slice(start, start+numTeams);
+        shuffle(chunk);
+        jittered.push(...chunk);
+      }
+      sorted = jittered;
+      if(Math.random() < 0.5) sizes.reverse();
+    }
+
+    const teamPlayers = snakeAssign(sorted, sizes);
+    groups = teamPlayers.map(members => {
+      const avg = members.reduce((s,p)=>s+p.index,0) / members.length;
+      return {members: members.sort((a,b)=>a.index-b.index), avg};
+    });
+    groups.sort((a,b)=> b.members.length - a.members.length);
+    renderGroupsUI();
+  }
+
+  function renderGroupsUI(){
+    if(!groups){
+      els.groupsSection.style.display = 'none';
+      return;
+    }
+    els.groupsSection.style.display = 'block';
+    els.reshuffleBtn.style.display = 'inline-block';
+    els.benchNote.innerHTML = '';
+    if(benched.length){
+      const note = document.createElement('div');
+      note.className='bench-note';
+      const allThrees = els.allThreesomeToggle.checked;
+      note.textContent = (benched.length===1 ? benched[0].name + ' is sitting out this round ' : benched.map(b=>b.name).join(', ') + ' are sitting out this round ')
+        + '— ' + roster.filter(p=>p.participating).length + (allThrees ? " players can't split evenly into threesomes." : " players can't split evenly into groups of 3–4.");
+      els.benchNote.appendChild(note);
+    }
+    els.groupsGrid.innerHTML = '';
+    groups.forEach((g, i)=>{
+      const card = document.createElement('div');
+      card.className='team-card';
+      card.style.animationDelay = (i*0.05)+'s';
+      const head = document.createElement('div');
+      head.className='team-head';
+      const num = document.createElement('span');
+      num.className='num'; num.textContent = i+1;
+      const name = document.createElement('span');
+      name.className='name'; name.textContent = g.members.length===3 ? 'Threesome' : 'Foursome';
+      const avg = document.createElement('span');
+      avg.className='avg'; avg.textContent = 'avg ' + fmtIndex(g.avg);
+      head.append(num, name, avg);
+      const body = document.createElement('div');
+      body.className='team-body';
+      const ul = document.createElement('ul');
+      g.members.forEach(p=>{
+        const li = document.createElement('li');
+        const badge = document.createElement('span');
+        badge.className='grade-badge grade-'+p.grade; badge.textContent=p.grade;
+        const nm = document.createElement('span');
+        nm.className='p-name'; nm.textContent = p.name;
+        const ix = document.createElement('span');
+        ix.className='p-index'; ix.textContent = fmtIndex(p.index);
+        li.append(badge, nm, ix);
+        ul.appendChild(li);
+      });
+      body.appendChild(ul);
+      card.append(head, body);
+      els.groupsGrid.appendChild(card);
+    });
+  }
+
+  function renderGroups(){
+    if(groups) renderGroupsUI();
+  }
+
+  // ---- events ----
+  els.addBtn.addEventListener('click', ()=>{
+    const name = els.addName.value.trim();
+    const index = parseFloat(els.addIndex.value);
+    els.addMsg.textContent = '';
+    if(!name || isNaN(index)){
+      els.addMsg.textContent = 'Enter a name and a numeric index.';
+      return;
+    }
+    upsert(name, index);
+    assignGrades();
+    els.addName.value = ''; els.addIndex.value = '';
+    save();
+    renderAll();
+  });
+
+  els.pasteToggle.addEventListener('click', ()=>{
+    els.pasteArea.classList.toggle('open');
+    els.pasteToggle.textContent = els.pasteArea.classList.contains('open') ? 'Hide paste area' : 'Paste a list instead';
+  });
+
+  els.importBtn.addEventListener('click', ()=>{
+    const parsed = parseBlock(els.pasteText.value);
+    if(parsed.length===0){
+      els.addMsg.textContent = "Couldn't find any valid \"Name, Index\" lines.";
+      return;
+    }
+    parsed.forEach(p => upsert(p.name, p.index));
+    assignGrades();
+    els.pasteText.value = '';
+    els.addMsg.textContent = '';
+    save();
+    renderAll();
+  });
+
+  els.clearAvailableBtn.addEventListener('click', ()=>{
+    const count = roster.filter(p=>!p.participating).length;
+    if(count === 0) return;
+    roster = roster.filter(p=>p.participating);
+    assignGrades();
+    save();
+    renderAll();
+  });
+
+  els.clearParticipatingBtn.addEventListener('click', ()=>{
+    const count = roster.filter(p=>p.participating).length;
+    if(count === 0) return;
+    roster.forEach(p=>{ if(p.participating) p.participating = false; });
+    groups = null;
+    benched = [];
+    els.groupsSection.style.display = 'none';
+    els.reshuffleBtn.style.display = 'none';
+    els.generateMsg.textContent = '';
+    save();
+    renderAll();
+  });
+
+  els.generateBtn.addEventListener('click', ()=> buildGroups(false));
+  els.reshuffleBtn.addEventListener('click', ()=> buildGroups(true));
+
+  load();
+})();
+</script>
+</body>
+</html>
